@@ -1,0 +1,418 @@
+---
+title: "Estudo Solução vs Ponta - Nebraska"
+author: "Maxwel Coura Oliveira"
+date: "6/15/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(emmeans)
+library(lme4)
+library(glmmTMB)
+library(lmerTest)
+library(bestNormalize)
+library(ggpubr)
+library(stats)
+library(car)
+library(kableExtra)
+library(betareg)
+```
+
+```{r}
+nozzle <- read_csv("nozzle_NE.csv") %>% 
+  mutate_if(is.character, as.factor)
+```
+
+
+
+
+
+# Dv10
+
+
+Primeiramente, olhamos a distruibuição dos dados
+
+```{r}
+ggplot(nozzle) + aes(y=Dv10) + geom_histogram()
+```
+
+Esse dado tem uma distruibuição que não segue a distribuição, então vamos usar distruibuição Gamma no modelo.
+
+
+
+```{r}
+#homogeineity of variances
+leveneTest(Dv10 ~ Solution * Nozzle, data = nozzle)
+```
+
+P-valor > 0.05, o que significa que existe homogeneidade da variancia.
+
+
+
+```{r warning=FALSE}
+#Modelo
+# Fatorial Solucao vs Nozzle
+# Experimento em DIC, Não existe necessidade de usar random effects
+model10 <- glm(Dv10 ~ Solution * Nozzle, data= nozzle, family = Gamma(link = "inverse"))
+```
+
+```{r}
+#Anova
+Anova(model10)
+```
+
+Existe interacao entre Nozzle e Solution
+
+
+```{r}
+emmip(model10, ~ Solution|Nozzle, type="response") +
+  coord_flip()
+```
+
+
+
+
+```{r}
+lsmeans10 <- emmeans(model10, ~ Solution|Nozzle, cont="pairwise", adjust="none", type="response", alpha=0.05)
+
+lsmeans10
+```
+
+```{r}
+plot(lsmeans10, ~ Solution|Nozzle, comparisons=TRUE, type="response", alpha=0.05, adjust="none")
+```
+
+
+
+
+Veja a comparacao LSD das solucoes dentro de cada Ponta (nozzle). As letras mostram as diferenças entre as soluções. 
+
+```{r warning=FALSE}
+cld10 <-CLD(lsmeans10, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+
+cld10
+```
+
+
+```{r}
+nd10 <- as.data.frame(lsmeans10$emmeans)
+ggplot(nd10, aes(x=reorder(Solution,response), y=response, color=Solution)) + facet_grid(~Nozzle) +
+geom_point(size=2) + 
+scale_color_manual(values=c("red", "blue", "green", "orange", "purple", "purple")) +
+theme_bw() + labs(y="Dv10", x="") +
+geom_linerange(aes(ymin = asymp.LCL, ymax = asymp.UCL), size=1.5) + 
+theme(axis.title = element_text(size=16),
+axis.text.x = element_text(size=10, angle = 45),
+legend.position = "none") + coord_flip()
+
+```
+
+
+
+# Dv50
+
+```{r}
+ggplot(nozzle) + aes(y=Dv50) + geom_histogram()
+```
+
+```{r}
+#homogeineity of variances
+leveneTest(Dv50 ~ Solution * Nozzle, data = nozzle)
+```
+
+
+```{r warning=FALSE}
+model50 <- glm(Dv50 ~ Solution * Nozzle, data= nozzle, family = Gamma(link = "inverse"))
+```
+
+```{r}
+#summary(model10)
+Anova(model50)
+```
+
+
+
+```{r}
+emmip(model50, ~ Solution|Nozzle, type="response") + 
+  coord_flip()
+```
+
+
+
+
+```{r}
+lsmeans50 <- emmeans(model50, ~ Solution|Nozzle, cont="pairwise", adjust="none", type="response", alpha=0.05)
+
+lsmeans50
+```
+
+```{r}
+plot(lsmeans50, ~ Solution|Nozzle, comparisons=TRUE, type="response", alpha=0.05, adjust="none")
+```
+
+```{r warning=FALSE}
+cld50 <-CLD(lsmeans50, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+
+cld50
+```
+
+```{r}
+nd50 <- as.data.frame(lsmeans50$emmeans)
+ggplot(nd50, aes(x=reorder(Solution,response), y=response, color=Solution)) + facet_grid(~Nozzle) +
+geom_point(size=2) +
+scale_color_manual(values=c("red", "blue", "green", "orange", "purple", "purple")) +
+theme_bw() + labs(y="Dv50", x="") +
+geom_linerange(aes(ymin = asymp.LCL, ymax = asymp.UCL), size=1.5) + 
+theme(axis.title = element_text(size=16),
+axis.text.x = element_text(size=10, angle = 45),
+legend.position = "none") + coord_flip()
+```
+
+
+# Dv90
+
+```{r}
+ggplot(nozzle) + aes(y=Dv90) + geom_histogram()
+```
+
+```{r}
+#homogeineity of variances
+leveneTest(Dv90 ~ Solution * Nozzle, data = nozzle)
+```
+
+
+```{r warning=FALSE}
+model90 <- glm(Dv90 ~ Solution * Nozzle, data= nozzle, family = Gamma(link = "inverse"))
+```
+
+```{r}
+#summary(model10)
+Anova(model90)
+```
+
+
+
+```{r}
+emmip(model90, ~ Solution|Nozzle, type="response") + 
+  coord_flip()
+```
+
+
+
+
+```{r}
+lsmeans90 <- emmeans(model90, ~ Solution|Nozzle, cont="pairwise", adjust="none", type="response", alpha=0.05)
+
+lsmeans90
+```
+
+```{r}
+plot(lsmeans90, ~ Solution|Nozzle, comparisons=TRUE, type="response", alpha=0.05, adjust="none")
+```
+
+```{r warning=FALSE}
+cld90 <-CLD(lsmeans90, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+
+cld90
+```
+
+```{r}
+nd90 <- as.data.frame(lsmeans90$emmeans)
+ggplot(nd90, aes(x=reorder(Solution,response), y=response, color=Solution)) + facet_grid(~Nozzle) +
+geom_point(size=2) + 
+scale_color_manual(values=c("red", "blue", "green", "orange", "purple", "purple")) +
+theme_bw() + labs(y="Dv90", x="") +
+geom_linerange(aes(ymin = asymp.LCL, ymax = asymp.UCL), size=1.5) + 
+theme(axis.title = element_text(size=16),
+axis.text.x = element_text(size=10, angle = 45),
+legend.position = "none") + coord_flip()
+
+```
+
+# R/S
+
+```{r}
+ggplot(nozzle) + aes(y=RS) + geom_histogram()
+```
+
+```{r}
+#homogeineity of variances
+leveneTest(RS ~ Solution * Nozzle, data = nozzle)
+```
+
+
+```{r warning=FALSE}
+modelRS <- glm(RS ~ Solution * Nozzle + (1|Rep), data= nozzle, family = Gamma(link = "inverse"))
+```
+
+```{r}
+#summary(model10)
+Anova(modelRS)
+```
+
+
+
+```{r}
+emmip(modelRS, ~ Solution|Nozzle, type="response") + 
+  coord_flip()
+```
+
+
+
+
+```{r}
+lsmeansRS <- emmeans(modelRS, ~ Solution|Nozzle, cont="pairwise", adjust="none", type="response", alpha=0.05)
+
+lsmeansRS
+```
+
+```{r}
+plot(lsmeansRS, ~ Solution|Nozzle, comparisons=TRUE, type="response", alpha=0.05, adjust="none")
+```
+
+```{r warning=FALSE}
+cldRS <-CLD(lsmeansRS, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+
+cldRS
+```
+
+```{r}
+ndRS <- as.data.frame(lsmeansRS$emmeans)
+ggplot(ndRS, aes(x=reorder(Solution,response), y=response, color=Solution)) + facet_grid(~Nozzle) +
+geom_point(size=2) + 
+scale_color_manual(values=c("red", "blue", "green", "orange", "purple", "purple")) +
+theme_bw() + labs(y="RS", x="") +
+geom_linerange(aes(ymin = asymp.LCL, ymax = asymp.UCL), size=1.5) + 
+theme(axis.title = element_text(size=16),
+axis.text.x = element_text(size=10),
+legend.position = "none") + coord_flip()
+```
+
+
+
+
+# Driftable fines
+
+```{r include=FALSE}
+nozzle <- nozzle %>% 
+  mutate(Driftable100 = one / 100,
+         Driftable200 = two / 100)
+```
+
+
+Driftable fines é em percentagem. Nesse caso vamos usar a distribuição Beta.
+
+
+Driftable fines < 100
+
+```{r}
+#Modelo com dois fatores Solution vs Nozzle
+model100 <- betareg(Driftable100 ~ Solution * Nozzle, data=nozzle, link = "logit")
+```
+
+
+```{r}
+Anova(model100)
+```
+
+
+
+```{r}
+emmip(model100, ~ Solution | Nozzle, type="response") + 
+  coord_flip()
+```
+
+
+```{r}
+lsmeans100 <- emmeans(model100, ~ Solution | Nozzle, cont="pairwise", adjust="none", type="response", alpha=0.05)
+
+lsmeans100
+```
+
+
+```{r}
+plot(lsmeans100, comparisons=TRUE, type="response", alpha=0.05, adjust="none")
+```
+
+
+```{r warning=FALSE}
+cld100 <-CLD(lsmeans100, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+
+cld100
+```
+
+
+```{r}
+nd100 <- as.data.frame(lsmeans100$emmeans)
+ggplot(nd100, aes(x=reorder(Solution,emmean), y=emmean*100, color=Solution)) + facet_grid(~Nozzle) +
+geom_point(size=1) + ylim(0,100) +
+scale_color_manual(values=c("red", "blue", "green", "orange", "purple", "purple")) +
+theme_bw() + labs(y="% Driftable fines (<100um)", x="") +
+geom_linerange(aes(ymin = asymp.LCL*100, ymax = asymp.UCL*100), size=1.5) + 
+theme(axis.title = element_text(size=16),
+axis.text = element_text(size=15),
+legend.position = "none") +
+coord_flip()
+```
+
+
+
+
+
+
+Driftable fines < 200
+
+```{r}
+model200 <- betareg(Driftable200 ~ Solution * Nozzle, data=nozzle, link = "logit")
+```
+
+
+```{r}
+Anova(model200)
+```
+
+
+
+```{r}
+emmip(model200, ~ Solution | Nozzle, type="response") + 
+  coord_flip()
+```
+
+
+```{r}
+lsmeans200 <- emmeans(model200, ~ Solution | Nozzle, cont="pairwise", adjust="none", type="response", alpha=0.05)
+
+lsmeans200
+```
+
+
+```{r}
+plot(lsmeans200, comparisons=TRUE, type="response", alpha=0.05, adjust="none")
+```
+
+
+```{r warning=FALSE}
+cld200 <-CLD(lsmeans200, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+
+cld200
+```
+
+
+```{r}
+nd200 <- as.data.frame(lsmeans200$emmeans)
+ggplot(nd200, aes(x=reorder(Solution,emmean), y=emmean*100, color=Solution)) + facet_grid(~Nozzle) +
+geom_point(size=1) + ylim(0,100) +
+scale_color_manual(values=c("red", "blue", "green", "orange", "purple", "purple")) +
+theme_bw() + labs(y="% Driftable fines (<200um)", x="") +
+geom_linerange(aes(ymin = asymp.LCL*100, ymax = asymp.UCL*100), size=1.5) + 
+theme(axis.title = element_text(size=16),
+axis.text = element_text(size=15),
+legend.position = "none") +
+coord_flip()
+```
+
+
+
