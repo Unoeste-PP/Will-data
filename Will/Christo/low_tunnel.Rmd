@@ -1,0 +1,90 @@
+---
+title: "Untitled"
+author: "Maxwel Coura Oliveira"
+date: "8/4/2020"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+library(kableExtra)
+```
+
+```{r}
+yield <- read_csv("yield.csv") %>% 
+  mutate_if(is.character, as.factor)
+glimpse(yield)
+```
+
+
+
+```{r}
+ggplot(yield, aes(x=trt, y=kgha, fill=trt)) + geom_bar(stat = "summary", fun.y = "mean") + coord_flip() +
+  theme(legend.position = "none")
+```
+
+
+
+
+
+```{r}
+model <- lmer(kgha ~ trt + (1|rep), data=yield)
+```
+
+
+
+```{r}
+anova(model)
+```
+
+
+
+
+```{r}
+emmip(model, ~ trt) 
+```
+
+
+
+```{r}
+lsmeans <- emmeans(model, ~ trt, cont="pairwise", adjust="none", alpha=0.05)
+
+lsmeans
+```
+
+
+```{r}
+plot(lsmeans, ~ trt, comparisons=TRUE, type="response", alpha=0.05, adjust="none")
+```
+
+
+```{r warning=FALSE}
+cld <- CLD(lsmeans, alpha=0.05, Letters=letters, adjust="tukey", reversed = TRUE)
+
+cld 
+```
+
+```{r}
+nd <- as.data.frame(lsmeans$emmeans)
+
+
+ggplot(nd, aes(x=reorder(trt, emmean), y=emmean, color=trt)) + 
+geom_point(size=4) + ylim(0,5500) +
+scale_color_brewer(palette = "Paired") +
+theme_bw() + labs(x="", y=expression(bold(paste("Produtividade da soja (kg ha"^"-2",")")))) +
+geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size=1.5) + 
+  
+theme(axis.title = element_text(size=16),
+axis.text = element_text(size=15),
+legend.position = "none") +
+coord_flip() +
+  ggsave("produtividade.png", height=6, width = 12)
+```
+```{r}
+kable(cld)
+```
+
