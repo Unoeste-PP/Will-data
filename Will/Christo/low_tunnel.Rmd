@@ -1,9 +1,11 @@
 ---
-title: "Untitled"
+title: "Estudo dicamba em soja"
 author: "Maxwel Coura Oliveira"
 date: "8/4/2020"
 output: html_document
 ---
+
+# Produtividade
 
 
 ```{r}
@@ -16,7 +18,8 @@ library(kableExtra)
 
 ```{r}
 yield <- read_csv("yield.csv") %>% 
-  mutate_if(is.character, as.factor)
+  mutate_if(is.character, as.factor) %>% 
+  filter(trtn != "7" & trtn != "11")
 glimpse(yield)
 ```
 
@@ -69,22 +72,170 @@ cld
 ```
 
 ```{r}
-nd <- as.data.frame(lsmeans$emmeans)
+nd <- as.data.frame(lsmeans$emmeans) %>% 
+  mutate(trt = factor(trt, levels = c("Controle", "Atectra", "Atectra + Vapor Grip", "Atectra + Roundup Transorb R", "Atectra + Roundup Transorb R + Vapor Grip", "Atectra + Roundup WG", "Atectra + Roundup Original Mais", "Atectra + Roundup Original Mais + Vapor Grip", "Atectra + Roundup Transorb"), labels =c("Controle", "DGA", "DGA + RD", "DGA + Glifosato sal potássico", "DGA + Glifosato sal potássico + RD", "DGA + Glifosato sal de amônio", "DGA + Glifosato sal de di-amônio", "DGA + Glifosato sal de di-amônio + RD", "DGA + Glifosato sal de isopropilamina")))
 
 
-ggplot(nd, aes(x=reorder(trt, emmean), y=emmean, color=trt)) + 
-geom_point(size=4) + ylim(0,5500) +
+ggplot(nd, aes(x=trt, y=emmean, color=trt)) + 
+geom_point(size=4) + 
+  scale_y_continuous(limits = c(0, 6000), breaks=seq(0, 6000, 1000)) +
 scale_color_brewer(palette = "Paired") +
-theme_bw() + labs(x="", y=expression(bold(paste("Produtividade da soja (kg ha"^"-2",")")))) +
+theme_bw() + labs(x="", y=expression(bold(paste("Produtividade da soja (kg ha"^"-1",")")))) +
 geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size=1.5) + 
-  
-theme(axis.title = element_text(size=16),
-axis.text = element_text(size=15),
+  annotate("text", x = 1, y = 500, label = "P-valor = 0,39", size=5) +
+theme(axis.title = element_text(size=16), panel.grid = element_blank(),
+axis.text = element_text(size=15, color="black"),
 legend.position = "none") +
 coord_flip() +
-  ggsave("produtividade.png", height=6, width = 12)
+  ggsave("produtividade.png", height=6, width = 10, dpi=600)
 ```
+
+
+```{r}
+ggplot(nd, aes(x=trt, y=emmean, fill=trt)) + 
+geom_bar(stat="identity") + 
+  scale_y_continuous(limits = c(0, 6000), breaks=seq(0, 6000, 1000)) +
+scale_fill_brewer(palette = "Paired") +
+theme_bw() + labs(x="", y=expression(bold(paste("Produtividade da soja (kg ha"^"-1",")")))) +
+geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size=1.5, color="black") + 
+  annotate("text", x = 0.7, y =5500, label = "P-valor = 0,39", size=5) +
+theme(axis.title = element_text(size=16), panel.grid = element_blank(),
+axis.text = element_text(size=15, color="black"),
+legend.position = "none") +
+coord_flip() +
+  ggsave("produtividade_2.png", height=6, width = 10, dpi=600)
+```
+
+
+
 ```{r}
 kable(cld)
+```
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------
+
+
+# Fitotoxicidade
+
+
+```{r}
+library(ggridges)
+```
+
+
+```{r}
+fito_1 <- read_csv("injury_14d.csv") %>% 
+  pivot_longer(cols = 4:18, names_to = "distance", values_to = "fito") %>% 
+  mutate(dat = "14")
+
+
+fito_2 <- read_csv("injury_28d.csv") %>% 
+  pivot_longer(cols = 4:18, names_to = "distance", values_to = "fito") %>% 
+  mutate(dat = "28")
+
+
+fito <- bind_rows(fito_1, fito_2) %>% 
+  filter(trtn != "7" & trtn != "11") %>% 
+  mutate(trt = factor(trt, levels = c("Controle", "Atectra", "Atectra + Vapor Grip", "Atectra + Roundup Transorb R", "Atectra + Roundup Transorb R + Vapor Grip", "Atectra + Roundup WG", "Atectra + Roundup Original Mais", "Atectra + Roundup Original Mais + Vapor Grip", "Atectra + Roundup Transorb"), labels =c("Controle", "DGA", "DGA + RD", "DGA + Glifosato sal potássico", "DGA + Glifosato sal potássico + RD", "DGA + Glifosato sal de amônio", "DGA + Glifosato sal de di-amônio", "DGA + Glifosato sal de di-amônio + RD", "DGA + Glifosato sal de isopropilamina"))) %>% 
+  mutate(distance = as.numeric(distance)) %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate(dat = factor(dat, levels = c("14", "28"), labels = c("14 DAT", "28 DAT")))
+```
+
+```{r}
+ggplot(fito, aes(y=distance, x=fito)) + #geom_bar(stat="summary", fun.y="mean")
+  geom_density_ridges(scale=2) + facet_grid(trt~dat) +
+  labs(x="Índice de fitotoxicidade na soja", y="") + 
+  scale_x_continuous(limits = c(1, 10), breaks=seq(1, 10, 1)) +
+  scale_fill_brewer(palette = "Set1") + theme_bw() +
+  theme(axis.title = element_text(size=14, face="bold"), 
+        panel.grid = element_blank(), strip.text = element_text(size=14, face="bold"),
+axis.text = element_text(size=12, color="black"),
+legend.position = "none") +
+  ggsave("fito.png", height=6, width=9, dpi=600)
+```
+
+
+
+```{r}
+ggplot(fito, aes(x=trt, y=fito, fill=trt)) + #geom_bar(stat="summary", fun.y="mean")
+  geom_violin() + facet_grid(~dat) +
+  labs(y="Índice de fitotoxicidade na soja", x="") + 
+  scale_y_continuous(limits = c(1, 10), breaks=seq(1, 10, 1)) + coord_flip() +
+  scale_fill_brewer(palette = "Set1") + theme_bw() +
+  theme(axis.title = element_text(size=14, face="bold"), 
+        panel.grid = element_blank(), strip.text = element_text(size=14, face="bold"),
+axis.text = element_text(size=12, color="black"),
+legend.position = "none") +
+  ggsave("fito_2.png", height=6, width=9, dpi=600)
+```
+
+```{r}
+fito %>% 
+ggplot(aes(x=distance, y=fito, color=trt)) + #geom_bar(stat="summary", fun.y="mean")
+  geom_smooth(method = 'loess', se=FALSE) + facet_grid(~dat) +
+  labs(y="Índice de fitotoxicidade na soja", x="Distância (cm)") + 
+  ylim(0,10) +
+  xlim(0,300) +
+  scale_y_continuous(limits = c(0, 10), breaks=seq(0, 10, 1)) +
+  scale_color_brewer(name="", palette = "Set1") + theme_bw() +
+  theme(axis.title = element_text(size=14, face="bold"), 
+        panel.grid = element_blank(), strip.text = element_text(size=14, face="bold"),
+axis.text = element_text(size=12, color="black"),
+legend.position = c(0.87,0.75)) +
+  ggsave("fito_3.png", width= 12, height=6, dpi=600)
+```
+```{r}
+fito %>% 
+  group_by(trt, distance, dat) %>% 
+  summarise(fito = round(mean(fito, 0))) %>% 
+  filter(trt != "Controle") %>% 
+ggplot(aes(x=distance, y=fito, fill=trt, label=fito), color-"black") + geom_bar(stat="identity") +
+   facet_wrap(dat~trt, ncol = 4) +
+  labs(y="Índice de fitotoxicidade na soja", x="Distância (cm)") + 
+  geom_label() +
+  ylim(0,10) +
+  xlim(0,300) +
+  scale_fill_brewer(name="", palette = "Set1") + theme_bw() +
+  theme(axis.title = element_text(size=14, face="bold"), 
+        panel.grid = element_blank(), strip.text = element_text(size=10, face="bold"),
+axis.text = element_text(size=12, color="black"),
+legend.position = "none") +
+  ggsave("fito_3.png", width= 12, height=12, dpi=600)
+```
+
+```{r}
+fito %>% 
+  group_by(trt, distance, dat) %>% 
+  summarise(fito = round(mean(fito, 0))) %>% 
+  filter(trt != "Controle" & dat=="28 DAT") %>% 
+ggplot(aes(x=distance, y=fito, fill=trt, label=fito), color-"black") + geom_bar(stat="identity") +
+   facet_wrap(~trt, ncol = 4) +
+  labs(y="Índice de fitotoxicidade na soja", x="Distância (cm)") + 
+  geom_label() +
+  ylim(0,10) +
+  xlim(0,300) +
+  scale_fill_brewer(name="", palette = "Set1") + theme_bw() +
+  theme(axis.title = element_text(size=14, face="bold"), 
+        panel.grid = element_blank(), strip.text = element_text(size=10, face="bold"),
+axis.text = element_text(size=12, color="black"),
+legend.position = "none") +
+  ggsave("fito_28DAT.png", width= 12, height=6, dpi=600)
+```
+
+
+
+
+
+```{r}
+fito %>% 
+  group_by(trt, dat) %>% 
+  summarise(mean = mean(fito), max= max(fito), min= min(fito), desvio_padrao = sd(fito)) %>% 
+  kable()
 ```
 

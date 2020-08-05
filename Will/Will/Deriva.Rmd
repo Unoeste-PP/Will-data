@@ -22,7 +22,7 @@ library(kableExtra)
 # Inserindo os dados
 
 ```{r warning=FALSE, message=FALSE}
-deriva <- read_csv("Will/Dados_Indice_Deriva.csv")
+deriva <- read_csv("Dados_Indice_Deriva.csv")
 ```
 
 # Observando os dados com box-plots
