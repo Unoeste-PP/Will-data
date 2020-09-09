@@ -1,0 +1,133 @@
+---
+title: "data_analysis"
+author: "Maxwel Coura Oliveira"
+date: "9/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(agricolae)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+library(car)
+library(cdlTools)
+```
+
+
+```{r}
+dat14 <- read_csv("data_14dat.csv") %>% 
+  pivot_longer(cols=6:20, names_to = "distance", values_to = "injury")
+
+dat28 <- read_csv("data_28dat.csv") %>% 
+  pivot_longer(cols=6:20, names_to = "distance", values_to = "injury")
+
+data <- bind_rows(dat14, dat28) %>% 
+  mutate(distance = as.double(distance)) %>% 
+  mutate_if(is.character, factor) %>% 
+  mutate(dat = factor(dat),
+         unit = factor(unit))
+```
+```{r message=FALSE}
+library(drc)
+
+Data <- data %>% 
+  filter(treatn != "1" & dat == "14") 
+  
+
+model <- drm(injury/10 ~ distance, treat, fct = l2(), data=Data)
+summary(model)
+plot(model)
+```
+```{r}
+Data = data %>%
+  filter(unit=="88") 
+#plot(Data$distance, Data$injury)
+audps(Data$injury, Data$distance, type="absolute")
+```
+
+
+
+```{r}
+data %>% 
+  filter(treat != "untreated") %>% 
+  mutate(distance = as.factor(distance)) %>% 
+  ggplot(aes(x=distance, y=injury, fill=treat)) + geom_bar(stat="summary", position = "dodge", fun.y="mean") + facet_grid(dat ~ treat) + theme_bw() +
+  scale_color_brewer(palette = "Paired") +
+  ggsave("Figure.png", height=6, width=12)
+```
+```{r}
+data %>% 
+  ggplot(aes(x=treat, y=auc, fill=treat)) + geom_bar(stat = "summary", show.legend = FALSE) +
+  facet_grid(~ dat) + theme_bw() + coord_flip() +
+  scale_color_brewer(palette = "Paired") +
+  ggsave("Figure.png", height=6, width=12)
+```
+
+```{r}
+dat <- data %>% 
+  mutate(auc = (auc / 100) - 3) %>% 
+  filter(treat != "untreated")
+
+bartlett.test(tauc ~ treat, data=dat)
+leveneTest(tauc ~ treat, data=dat)
+
+dat <- dat %>%   
+  mutate(tauc = sqrt(auc))
+
+plot(density(dat$auc))
+qqnorm(dat$auc); qqline(dat$auc, col=2)
+pearson.test(dat$auc)
+leveneTest(auc ~ Trtdes, data=Data2)
+
+ggdensity(dat$tauc, Main = "Density Plot", xlab = "AUDPS")
+```
+
+
+```{r}
+#model using sqrt transformation
+
+dat14 <- dat %>%  filter(dat == "14")
+
+model=lmer(auc ~ treat + (1|rep), data=dat14)
+anova(model, test.statistic = "F")
+```
+
+```{r}
+emmip(model, ~ treat, type="response") + coord_flip()
+```
+
+
+```{r}
+lsmeans <- emmeans(model, ~ treat, adjust="none", contr="pairwise")
+lsmeans
+```
+
+
+```{r}
+plot(lsmeans, ~ herbicide, comparisons=TRUE, alpha=0.05, adjust="none")
+```
+
+
+```{r}
+nd <- as.data.frame(lsmeans$emmeans)
+ggplot(nd, aes(x=reorder(treat,emmean), y=emmean, color=treat)) + 
+geom_point(size=4) + 
+#scale_color_manual(values=c("red", "blue", "green", "orange", "purple")) +
+theme_bw() + labs(y="Area Under Injury over Distance Stairs (AUIDS)", x="Herbicides") +
+geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size=1.5) + 
+theme(axis.title = element_text(size=16),
+axis.text = element_text(size=15),
+legend.position = "none") +
+coord_flip() + 
+  ggsave("injury_auc_14.png", units="in", width=10, height=6, dpi=600)
+```
+
+
+
+
