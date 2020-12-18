@@ -93,7 +93,7 @@ plot(lsmeans, ~ nozzle | solution, comparisons=TRUE, type="response", alpha=0.05
 
 
 ```{r warning=FALSE, message=FALSE}
-cld <-CLD(lsmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+cld <-CLD(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
 
 cld
 ```
@@ -119,12 +119,7 @@ Essa tabela é como os estudantes da Unesp reportam, apenas a média do índice 
 
 
 
-```{r warning=FALSE, message=FALSE}
-new_dt %>% 
-  group_by(solution, nozzle) %>% 
-  summarise(indice_deriva = mean(indice), sd=sd(indice), var=var(indice))  %>% 
-  kable()
-```
+
 
 
 

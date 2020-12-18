@@ -1,12 +1,14 @@
 ---
-title: "data_analysis"
+title: "Estudos no tunel baixo"
 author: "Maxwel Coura Oliveira"
 date: "9/2/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 ```
 
 ```{r include=FALSE}
@@ -33,17 +35,8 @@ data <- bind_rows(dat14, dat28) %>%
   mutate(dat = factor(dat),
          unit = factor(unit))
 ```
-```{r message=FALSE}
-library(drc)
 
-Data <- data %>% 
-  filter(treatn != "1" & dat == "14") 
-  
 
-model <- drm(injury/10 ~ distance, treat, fct = l2(), data=Data)
-summary(model)
-plot(model)
-```
 
 ```{r}
 Data = data %>%
@@ -53,15 +46,6 @@ audps(Data$injury, Data$distance, type="absolute")
 ```
 
 
-
-```{r}
-data %>% 
-  filter(treat != "untreated") %>% 
-  mutate(distance = as.factor(distance)) %>% 
-  ggplot(aes(x=distance, y=injury, fill=treat)) + geom_bar(stat="summary", position = "dodge", fun.y="mean") + facet_grid(dat ~ treat) + theme_bw() +
-  scale_color_brewer(palette = "Paired") +
-  ggsave("Figure.png", height=6, width=12)
-```
 
 
 
@@ -74,23 +58,26 @@ data %>%
   ggsave("Figure.png", height=6, width=12)
 ```
 
+
+
+
 ```{r}
 dat <- data %>% 
   mutate(auc = (auc / 100) - 3) %>% 
   filter(treat != "untreated")
 
-bartlett.test(tauc ~ treat, data=dat)
-leveneTest(tauc ~ treat, data=dat)
+bartlett.test(auc ~ treat, data=dat)
+leveneTest(auc ~ treat, data=dat)
 
 dat <- dat %>%   
   mutate(tauc = sqrt(auc))
 
 plot(density(dat$auc))
 qqnorm(dat$auc); qqline(dat$auc, col=2)
-pearson.test(dat$auc)
-leveneTest(auc ~ Trtdes, data=Data2)
+#pearson.test(dat$auc)
+#leveneTest(auc ~ Trtdes, data=Data2)
 
-ggdensity(dat$tauc, Main = "Density Plot", xlab = "AUDPS")
+#ggdensity(dat$auc, Main = "Density Plot", xlab = "AUDPS")
 ```
 
 
@@ -134,6 +121,14 @@ coord_flip() +
 ```
 
 
+```{r warning=FALSE, message=FALSE}
+cld <-CLD(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+
+cld
+```
+
+
+
 
 
 ```{r}
@@ -141,7 +136,7 @@ coord_flip() +
 
 dat28 <- dat %>%  filter(dat == "28")
 
-model=lmer(auc ~ treat + (1|rep), data=dat14)
+model=lmer(auc ~ treat + (1|rep), data=dat28)
 anova(model, test.statistic = "F")
 ```
 
@@ -176,4 +171,8 @@ coord_flip() +
 ```
 
 
+```{r warning=FALSE, message=FALSE}
+cld <-CLD(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
 
+cld
+```
