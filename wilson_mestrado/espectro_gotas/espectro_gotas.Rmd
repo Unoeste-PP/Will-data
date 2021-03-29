@@ -1,0 +1,19 @@
+---
+title: "espectro_gotas"
+author: "Maxwel Coura Oliveira"
+date: "3/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message = FALSE}
+library(tidyverse)
+```
+
+```{r}
+gotas <- readxl::read_excel("gotas.xlsx")
+```
+

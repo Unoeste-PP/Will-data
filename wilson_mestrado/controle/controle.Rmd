@@ -1,0 +1,271 @@
+---
+title: "controle"
+author: "Maxwel Coura Oliveira"
+date: "3/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#istall packages
+#install.packages("tidyverse") tira o # e faz assim para todos os pacotes
+
+```
+
+
+```{r}
+library(tidyverse)
+library(glmmTMB)
+library(lmerTest)
+library(emmeans)
+library(lme4)
+library(car)
+```
+
+## Controle
+
+```{r}
+controle <- readxl::read_excel("controle.xlsx", 
+                               sheet = "controle") %>% 
+  janitor::clean_names() %>% 
+  rename(rep = repeticao,
+         trt = tratamento,
+         dat = dias_apos_aplicacao_daa,
+         control = percent_controle) %>% 
+  mutate_if(is_character, as_factor) %>% 
+  mutate(control_prop = control / 100,
+         control_prop = case_when(
+           control == 100 ~ 0.999,
+           control == 0   ~ 0.001,
+           TRUE                ~ control_prop
+         )) %>% 
+  drop_na()
+```
+
+
+
+```{r}
+controle1 <- controle %>% 
+  filter(trt != "Água") %>% # removing untreated control for weed control analysis
+  group_by(especies, dat) %>% 
+  nest()
+```
+
+
+```{r warning = FALSE}
+model_function <- function(df) {
+  glmmTMB(control_prop ~ trt + (1|rep), family = beta_family(link = "logit"), 
+          REML=FALSE, #full maximum likelihood
+          data = df)
+}
+```
+
+
+```{r warning = FALSE}
+controle2 <- controle1 %>% 
+  mutate(model = map(data, model_function), # fit models
+         anova = map(model, glmmTMB:::Anova.glmmTMB)) # anova
+```
+
+
+```{r}
+# checking Anova results
+options(scipen = 999)
+controle2 %>% 
+  unnest(anova) %>% 
+  mutate(`Pr(>Chisq)` = round(`Pr(>Chisq)`, 3)) -> anova_results 
+
+anova_results1 <- anova_results %>% 
+  filter(`Pr(>Chisq)` <= 0.05) 
+```
+
+```{r}
+anova_results1 <- anova_results1 %>% 
+  dplyr::select(-Chisq, -Df, -`Pr(>Chisq)`)
+  
+anova_results2 <- anova_results1 %>% 
+  mutate(
+    emmeans = pmap(
+      .l = list(
+        object = model, 
+        specs = "trt",
+        type="response",
+#        cont="pairwise", 
+        adjust="none"
+      ),
+      .f = emmeans
+    )
+  ) 
+```
+
+
+```{r }
+cld_function <- function(emmeans) {
+  if(requireNamespace("multcomp")) {
+    multcomp::cld(emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+}
+}
+```
+
+
+```{r}
+data_results <- anova_results2 %>% 
+  mutate(cld = map(emmeans, cld_function))
+```
+
+
+```{r}
+# I want to make a table of your fitted values
+data_results1 <- data_results %>% 
+  dplyr::select(-data, -model, -emmeans) %>% 
+  unnest(cld)
+```
+
+
+```{r}
+# Split: one data frame per Species
+data_results1 %>%
+  dplyr::group_split(species_dat, dat) -> list_of_dfs
+
+list_of_dfs
+```
+
+
+```{r}
+list_of_dfs %>%
+  purrr::map(~pull(., especies, dat)) %>% # Pull out Species variable
+  purrr::map(~as.character(.)) %>% # Convert factor to character
+  purrr::map(~unique(.)) -> names(list_of_dfs) # Set this as names for list members
+
+names(list_of_dfs)
+```
+
+```{r}
+list_of_dfs %>%
+  writexl::write_xlsx(path = "controle2.xlsx")
+```
+
+
+## Biomassa
+
+```{r}
+biomassa <- readxl::read_excel("controle.xlsx", 
+                               sheet = "biomassa") %>% 
+  janitor::clean_names() %>% 
+  rename(rep = repeticao,
+         trt = tratamento) %>% 
+  mutate_if(is_character, as_factor) %>% 
+  mutate(peso_g = as.double(peso_g))
+```
+
+```{r}
+biomassa %>% 
+  ggplot(aes(x = log(peso_g))) +
+  geom_freqpoly()
+```
+
+```{r}
+# testing homogeneity
+bartlett.test(peso_g ~ trt, data = biomassa)
+```
+
+
+
+```{r}
+biomassa1 <- biomassa %>% 
+  group_by(especies) %>% 
+  nest()
+```
+
+
+```{r warning = FALSE}
+biomass_function <- function(df) {
+  lmer(log(peso_g) ~ trt + (1|rep), 
+          REML=FALSE, #full maximum likelihood
+          data = df)
+}
+```
+
+
+```{r warning = FALSE}
+biomassa2 <- biomassa1 %>% 
+  mutate(model = map(data, biomass_function),
+         anova = map(model, anova))
+```
+
+```{r}
+# checking Anova results
+options(scipen = 999)
+biomassa2 %>% 
+  unnest(anova) %>% 
+  mutate(`Pr(>F)` = round(`Pr(>F)`, 3)) -> bm_anova_results 
+
+# No anova effects to conyza bonariensis	
+```
+
+```{r emmeans_function}
+biomassa3 <- biomassa2  %>% 
+  mutate(
+    emmeans = pmap(
+      .l = list(
+        object = model, 
+        specs = "trt",
+        type="response", # bring back the g scale
+#        cont="pairwise", 
+        adjust="none"
+      ),
+      .f = emmeans
+    )
+  ) 
+```
+
+
+```{r cld-function}
+cld_function <- function(emmeans) {
+  if(requireNamespace("multcomp")) {
+    multcomp::cld(emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+}
+}
+```
+
+
+```{r cld}
+biomassa4 <- biomassa3 %>% 
+  mutate(cld = map(emmeans, cld_function))
+```
+
+
+```{r}
+biomassa5 <- biomassa4 %>% 
+  dplyr::select(-data, -model, -anova, -emmeans) %>% 
+  unnest(cld)
+```
+
+
+```{r}
+# Split: one data frame per Species
+biomassa5 %>%
+  dplyr::group_split(especies) -> list_of_dfs_biomass
+
+list_of_dfs_biomass
+```
+
+
+```{r}
+list_of_dfs_biomass %>%
+  purrr::map(~pull(., especies)) %>% # Pull out Species variable
+  purrr::map(~as.character(.)) %>% # Convert factor to character
+  purrr::map(~unique(.)) -> names(list_of_dfs_biomass) # Set this as names for list members
+
+names(list_of_dfs_biomass)
+```
+
+```{r}
+list_of_dfs_biomass %>%
+  writexl::write_xlsx(path = "biomass2.xlsx")
+## see that conyza bonariensis has no trt diff. This matches the anova results.
+```
