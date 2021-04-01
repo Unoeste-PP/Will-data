@@ -1,5 +1,5 @@
 ---
-title: "Estudos no tunel baixo"
+title: "Estudo no tunel baixo"
 author: "Maxwel Coura Oliveira"
 date: "9/2/2020"
 output:
