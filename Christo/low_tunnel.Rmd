@@ -18,8 +18,8 @@ library(kableExtra)
 
 ```{r}
 yield <- read_csv("yield.csv") %>% 
-  mutate_if(is.character, as.factor) %>% 
-  filter(trtn != "7" & trtn != "9" & trtn != "11")
+  mutate_if(is.character, as.factor) #%>% 
+#  filter(trtn != "7" & trtn != "9" & trtn != "11")
 glimpse(yield)
 ```
 
@@ -66,12 +66,14 @@ plot(lsmeans, ~ trt, comparisons=TRUE, type="response", alpha=0.05, adjust="none
 
 
 ```{r warning=FALSE}
-cld <- CLD(lsmeans, alpha=0.05, Letters=letters, adjust="tukey", reversed = TRUE)
+library(multcomp)
+cld <- cld(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="tukey", reversed = TRUE)
 
 cld 
 ```
 
 ```{r}
+# aqui tem de apenas 8 trts
 nd <- as.data.frame(lsmeans$emmeans) %>% 
   mutate(trt = factor(trt, levels = c("Controle", "Atectra", "Atectra + Vapor Grip", "Atectra + Roundup Transorb R", "Atectra + Roundup Transorb R + Vapor Grip", "Atectra + Roundup WG", "Atectra + Roundup Original Mais", "Atectra + Roundup Transorb"), labels =c("Controle", "DGA", "DGA + RD", "DGA + Glifosato sal potássico", "DGA + Glifosato sal potássico + RD", "DGA + Glifosato sal de amônio", "DGA + Glifosato sal de di-amônio", "DGA + Glifosato sal de isopropilamina")))
 
