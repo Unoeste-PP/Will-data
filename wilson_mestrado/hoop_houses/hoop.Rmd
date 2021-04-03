@@ -37,10 +37,18 @@ data <- bind_rows(dat14, dat28) %>%
 ```
 
 
+```{r}
+data %>% 
+  filter(dat == "14" & treat == "DGA") %>% 
+  ggplot(aes(x = distance, y = injury)) +
+  geom_smooth() 
+```
+
+
 
 ```{r}
 Data = data %>%
-  filter(unit=="88") 
+  filter(unit=="1") 
 #plot(Data$distance, Data$injury)
 audps(Data$injury, Data$distance, type="absolute")
 ```
@@ -86,7 +94,8 @@ qqnorm(dat$auc); qqline(dat$auc, col=2)
 
 dat14 <- dat %>%  filter(dat == "14")
 
-model=lmer(auc ~ treat + (1|rep), data=dat14)
+model = lmer(auc ~ treat + (1|rep), data=dat14)
+
 anova(model, test.statistic = "F")
 ```
 
@@ -122,7 +131,8 @@ coord_flip() +
 
 
 ```{r warning=FALSE, message=FALSE}
-cld <-CLD(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+library(multcomp)
+cld <-cld(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
 
 cld
 ```

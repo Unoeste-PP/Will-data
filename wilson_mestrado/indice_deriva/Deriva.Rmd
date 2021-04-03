@@ -93,7 +93,8 @@ plot(lsmeans, ~ nozzle | solution, comparisons=TRUE, type="response", alpha=0.05
 
 
 ```{r warning=FALSE, message=FALSE}
-cld <-CLD(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+library(multcomp)
+cld <- cld(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
 
 cld
 ```

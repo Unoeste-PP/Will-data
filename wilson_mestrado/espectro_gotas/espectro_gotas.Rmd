@@ -1,6 +1,6 @@
 ---
 title: "espectro_gotas"
-author: "Maxwel Coura Oliveira"
+author: "Max"
 date: "3/4/2021"
 output: html_document
 ---
@@ -11,9 +11,62 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r message = FALSE}
 library(tidyverse)
+library(vroom)
+library(emmeans)
+library(lme4)
+library(car)
+library(lmerTest)
+```
+
+
+
+
+
+```{r message = FALSE}
+gotas <- vroom("gotas.csv") %>% 
+  janitor::clean_names() %>% 
+  rename(herbicida = treatment) %>% 
+  mutate(dv_90 = str_replace(dv_90, "\\.", "")) %>% 
+  mutate_at(c("dv_10", "dv_50", "dv_90", "span", "percent_100_um", 
+              "percent_150_um"), ~ str_replace_all(., ",", "\\.")) %>% 
+  mutate_at(c("dv_10", "dv_50", "dv_90", "span", "percent_100_um", 
+              "percent_150_um"), str_squish) %>% 
+  mutate_at(vars("dv_10", "dv_50", "dv_90", "span", "percent_100_um", 
+                 "percent_150_um"), funs(as.double)) %>% 
+  mutate(pressure = as_factor(pressure)) %>% 
+  mutate_if(is_character, as_factor)
 ```
 
 ```{r}
-gotas <- readxl::read_excel("gotas.xlsx")
+glimpse(gotas)
 ```
+
+
+
+```{r}
+modelo_10 <- glm(dv_50 ~ herbicida * nozzle * pressure, data= gotas, 
+                 family = Gamma(link = "inverse"))
+```
+
+
+
+```{r}
+#Anova
+Anova(modelo_10)
+```
+
+
+```{r}
+lsmeans_10 <- emmeans(modelo_10, ~ herbicida * nozzle | pressure, 
+                      cont="pairwise", adjust="none", type="response", alpha=0.05)
+
+lsmeans_10
+```
+
+cld 
+
+```{r}
+
+```
+
 

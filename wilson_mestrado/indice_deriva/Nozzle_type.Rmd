@@ -23,7 +23,9 @@ library(betareg)
 
 ```{r}
 nozzle <- read_csv("nozzle_NE.csv") %>% 
-  mutate_if(is.character, as.factor)
+  mutate_if(is.character, as.factor) 
+
+nozzle$cento_50 <- nozzle$`150` 
 ```
 
 
@@ -91,7 +93,8 @@ plot(lsmeans10, ~ Solution|Nozzle, comparisons=TRUE, type="response", alpha=0.05
 Veja a comparacao LSD das solucoes dentro de cada Ponta (nozzle). As letras mostram as diferenças entre as soluções. 
 
 ```{r warning=FALSE}
-cld10 <-CLD(lsmeans10, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+library(multcomp)
+cld10 <-cld(lsmeans10$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
 
 cld10
 ```
@@ -299,7 +302,8 @@ legend.position = "none") + coord_flip()
 ```{r include=FALSE}
 nozzle <- nozzle %>% 
   mutate(Driftable100 = one / 100,
-         Driftable200 = two / 100)
+         Driftable200 = two / 100,
+         Driftable150 = cento_50 / 100) 
 ```
 
 
@@ -415,4 +419,6 @@ coord_flip()
 ```
 
 
+
+Drifable 150
 
