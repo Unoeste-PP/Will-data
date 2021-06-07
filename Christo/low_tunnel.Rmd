@@ -23,10 +23,15 @@ yield <- read_csv("yield.csv") %>%
 glimpse(yield)
 ```
 
+```{r}
+yield  %>% 
+  ggplot(aes(x = kgha)) +
+  geom_histogram(bins = 30)
+```
 
 
 ```{r}
-ggplot(yield, aes(x=trt, y=kgha, fill=trt)) + geom_bar(stat = "summary", fun.y = "mean") + coord_flip() +
+ggplot(yield, aes(x=trt, y=log(kgha), fill=trt)) + geom_bar(stat = "summary", fun.y = "mean") + coord_flip() +
   theme(legend.position = "none")
 ```
 
@@ -67,7 +72,7 @@ plot(lsmeans, ~ trt, comparisons=TRUE, type="response", alpha=0.05, adjust="none
 
 ```{r warning=FALSE}
 library(multcomp)
-cld <- cld(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="tukey", reversed = TRUE)
+cld <- cld(lsmeans$emmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
 
 cld 
 ```
